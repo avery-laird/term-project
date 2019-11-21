@@ -81,6 +81,8 @@ module Exec = struct
             (Dom.Val.of_c_array_alloc allocsite ~stride ~offset ~size ~traces, Some offset)
         | Language.Java ->
             (Dom.Val.of_java_array_alloc allocsite ~length:size ~traces, None)
+        | Language.JavaScript ->
+            (Dom.Val.of_js_array_alloc allocsite ~length:size ~traces, None)
       in
       let mem = Dom.Mem.init_array_relation allocsite ~offset_opt ~size ~size_exp_opt:None mem in
       if Int.equal dimension 1 then Dom.Mem.add_stack ~represents_multiple_values loc arr mem

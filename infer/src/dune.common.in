@@ -27,6 +27,8 @@ let clang = is_yes "@BUILD_C_ANALYZERS@"
 
 let java = is_yes "@BUILD_JAVA_ANALYZERS@"
 
+let js = is_yes "@BUILD_JS_ANALYZERS@"
+
 let facebook = is_yes "@IS_FACEBOOK_TREE@"
 
 let extra_cflags = if "@EXTRA_CFLAGS@" = "" then [] else ["@EXTRA_CFLAGS@"]
@@ -65,6 +67,7 @@ let common_optflags = match build_mode with Opt -> ["-O3"] | Default | Test -> [
 
 let common_libraries =
   (if java then ["javalib"; "sawja"] else [])
+  @ (if js then ["flow_parser"] else [])
   @ [ "ANSITerminal"
     ; "apron"
     ; "apron.octMPQ"

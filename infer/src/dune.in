@@ -13,7 +13,8 @@ let source_dirs =
   (if facebook then "facebook" else "opensource")
   :: ( ( if clang then ["al"; "clang"; "unit" ^/ "clang"]
        else ["clang_stubs"; "unit" ^/ "clang_stubs"] )
-     @ [ (if java then "java" else "java_stubs")
+       @ [ (if java then "java" else "java_stubs")
+       ; (if js then "js" else "js_stubs")
        ; "absint"
        ; "backend"
        ; "biabduction"

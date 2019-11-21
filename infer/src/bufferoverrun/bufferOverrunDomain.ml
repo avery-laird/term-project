@@ -254,6 +254,13 @@ module Val = struct
     ; size_sym= Relation.Sym.of_allocsite_size allocsite
     ; traces }
 
+  let of_js_array_alloc : Allocsite.t -> length:Itv.t -> traces:TraceSet.t -> t =
+    fun allocsite ~length ~traces ->
+    { bot with
+      arrayblk= ArrayBlk.make_js allocsite ~length
+    ; size_sym= Relation.Sym.of_allocsite_size allocsite
+    ; traces }
+    
 
   let of_literal_string : Typ.IntegerWidths.t -> string -> t =
    fun integer_type_widths s ->

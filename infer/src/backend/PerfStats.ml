@@ -34,6 +34,7 @@ type stats_type =
   | ClangFrontend of SourceFile.t
   | ClangProcessAST of SourceFile.t
   | JavaFrontend of SourceFile.t
+  | JavaScriptFrontend of SourceFile.t
   | TotalFrontend
   | Backend of SourceFile.t
   | TotalBackend

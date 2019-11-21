@@ -15,8 +15,10 @@ module F = Format
 module L = Logging
 
 module ArrInfo = struct
-  type t = C of {offset: Itv.t; size: Itv.t; stride: Itv.t} | Java of {length: Itv.t} | Top
-  [@@deriving compare]
+  type t = C of {offset: Itv.t; size: Itv.t; stride: Itv.t}
+         | Java of {length: Itv.t}
+         | JavaScript of {length: Itv.t}
+         | Top  [@@deriving compare]
 
   let top : t = Top
 
@@ -25,6 +27,8 @@ module ArrInfo = struct
 
 
   let make_java : length:Itv.t -> t = fun ~length -> Java {length}
+
+  let make_js : length:Itv.t -> t = fun ~length -> JavaScript {length}
 
   let join : t -> t -> t =
    fun a1 a2 ->
@@ -90,6 +94,8 @@ module ArrInfo = struct
         C {offset= f offset; size; stride}
     | Java _ ->
         L.(die InternalError) "Unexpected pointer arithmetics on Java array"
+    | JavaScript _ ->
+        L.(die InternalError) "Unexpected pointer arithmetics on JavaScript array"
     | Top ->
         Top
 
@@ -107,6 +113,8 @@ module ArrInfo = struct
         Itv.minus offset1 offset2
     | Java _, _ | _, Java _ ->
         L.(die InternalError) "Unexpected pointer arithmetics on Java array"
+    | JavaScript _, _ | _, JavaScript _ ->
+        L.(die InternalError) "Unexpected pointer arithmetics on JavaScript array"
     | Top, _ | _, Top ->
         Itv.top
 
@@ -118,6 +126,8 @@ module ArrInfo = struct
         C {offset= Itv.subst offset eval_sym; size= Itv.subst size eval_sym; stride}
     | Java {length} ->
         Java {length= Itv.subst length eval_sym}
+    | JavaScript {length} ->
+        JavaScript {length= Itv.subst length eval_sym}
     | Top ->
         Top
 
@@ -128,6 +138,8 @@ module ArrInfo = struct
     | C {offset; size} ->
         F.fprintf f "offset : %a, size : %a" Itv.pp offset Itv.pp size
     | Java {length} ->
+        F.fprintf f "length : %a" Itv.pp length
+    | JavaScript {length} ->
         F.fprintf f "length : %a" Itv.pp length
     | Top ->
         AbstractDomain.TopLiftedUtils.pp_top f
@@ -151,6 +163,8 @@ module ArrInfo = struct
         Itv.is_symbolic offset || Itv.is_symbolic size || Itv.is_symbolic stride
     | Java {length} ->
         Itv.is_symbolic length
+    | JavaScript {length} ->
+        Itv.is_symbolic length
     | Top ->
         false
 
@@ -165,6 +179,8 @@ module ArrInfo = struct
         Itv.SymbolSet.union3 s1 s2 s3
     | Java {length} ->
         Itv.get_symbols length
+    | JavaScript {length} ->
+        Itv.get_symbols length
     | Top ->
         Itv.SymbolSet.empty
 
@@ -176,6 +192,8 @@ module ArrInfo = struct
         C {offset= Itv.normalize offset; size= Itv.normalize size; stride= Itv.normalize stride}
     | Java {length} ->
         Java {length= Itv.normalize length}
+    | JavaScript {length} ->
+        JavaScript {length= Itv.normalize length}
     | Top ->
         Top
 
@@ -185,7 +203,7 @@ module ArrInfo = struct
     match arr2 with
     | C {offset= offset2} ->
         map_offset arr1 ~f:(fun offset1 -> f offset1 offset2)
-    | Java _ | Top ->
+    | Java _ | JavaScript _ | Top ->
         arr1
 
 
@@ -204,6 +222,8 @@ module ArrInfo = struct
         C {offset; size; stride}
     | Java _ ->
         Java {length= size}
+    | JavaScript _ ->
+        JavaScript {length= size}
     | Top ->
         Top
 
@@ -215,6 +235,8 @@ module ArrInfo = struct
         C {offset; size= f size; stride}
     | Java {length} ->
         Java {length= f length}
+    | JavaScript {length} ->
+        JavaScript {length= f length}
     | Top ->
         Top
 
@@ -232,6 +254,8 @@ module ArrInfo = struct
               C {offset= set offset; size= set size; stride= Itv.of_big_int new_stride} )
     | Java _ ->
         L.(die InternalError) "Unexpected cast on Java array"
+    | JavaScript _ ->
+        L.(die InternalError) "Unexpected cast on JavaScript array"
     | Top ->
         Top
 
@@ -243,19 +267,23 @@ module ArrInfo = struct
         C {offset; size; stride}
     | Java _ ->
         L.(die InternalError) "Unexpected offset setting on Java array"
+    | JavaScript _ ->
+        L.(die InternalError) "Unexpected offset setting on JavaScript array"
     | Top ->
         Top
 
 
-  let offsetof = function C {offset} -> offset | Java _ -> Itv.zero | Top -> Itv.top
+  let offsetof = function C {offset} -> offset | Java _ -> Itv.zero | JavaScript _ -> Itv.zero | Top -> Itv.top
 
-  let sizeof = function C {size} -> size | Java {length} -> length | Top -> Itv.top
+  let sizeof = function C {size} -> size | Java {length} -> length | JavaScript {length} -> length | Top -> Itv.top
 
   let byte_size = function
     | C {size; stride} ->
         Itv.mult size stride
     | Java _ ->
         L.(die InternalError) "Unexpected byte-size operation on Java array"
+    | JavaScript _ ->
+        L.(die InternalError) "Unexpected byte-size operation on JavaScript array"
     | Top ->
         Itv.top
 
@@ -289,6 +317,8 @@ let make_c : Allocsite.t -> offset:Itv.t -> size:Itv.t -> stride:Itv.t -> t =
 let make_java : Allocsite.t -> length:Itv.t -> t =
  fun a ~length -> singleton a (ArrInfo.make_java ~length)
 
+let make_js : Allocsite.t -> length:Itv.t -> t =
+  fun a ~length -> singleton a (ArrInfo.make_js ~length)
 
 let join_itv : cost_mode:bool -> f:(ArrInfo.t -> Itv.t) -> t -> Itv.t =
  fun ~cost_mode ~f a ->

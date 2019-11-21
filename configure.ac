@@ -100,6 +100,15 @@ AC_ARG_ENABLE(java-analyzers,
 BUILD_JAVA_ANALYZERS=$enable_java_analyzers
 AC_SUBST([BUILD_JAVA_ANALYZERS])
 
+AC_ARG_ENABLE(js-analyzers,
+  AS_HELP_STRING([--disable-js-analyzers],
+    [do not build the JavaScript analyzers (default is to build them)]),
+  ,
+  enable_js_analyzers=yes)
+
+BUILD_JS_ANALYZERS=$enable_js_analyzers
+AC_SUBST([BUILD_JS_ANALYZERS])
+
 AC_ARG_WITH(fcp-clang,
   AS_HELP_STRING([--with-fcp-clang],
     [use $CLANG_PREFIX/bin/clang to override the default compiler (default is not to override)]),
